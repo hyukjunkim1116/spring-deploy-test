@@ -42,7 +42,7 @@ jobs:
 
       - name: Code Deploy를 활용해 EC2에 프로젝트 코드 배포
         run: aws deploy create-deployment
-          --application-name spring-deploy-test
+          --application-name code-deploy-test
           --deployment-config-name CodeDeployDefault.AllAtOnce
           --deployment-group-name Production
           --s3-location bucket=spring-deploy-test,bundleType=tgz,key=$GITHUB_SHA.tar.gz
