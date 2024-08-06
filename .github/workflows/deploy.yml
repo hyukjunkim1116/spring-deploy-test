@@ -10,15 +10,46 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: SSH로 EC2에 접속하기
+        uses: actions/checkout@v4
+
+      - name: JDK 17버전 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: application.yml 파일 만들기
+        run: echo "${{ secrets.APPLICATION_PROPERTIES }}" > ./src/main/resources/application.yml
+
+      - name: 테스트 및 빌드하기
+        run: ./gradlew clean build
+
+      - name: 빌드된 파일 이름 변경하기
+        run: mv ./build/libs/test.jar ./test-built.jar
+
+      - name: SCP로 EC2에 빌드된 파일 전송하기
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          source: test-built.jar
+          target: /home/ubuntu/spring-deploy-test/tobe
+
+      - name: SSH로 EC2에 접속하기
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }} # EC2의 주소
-          username: ${{ secrets.EC2_USERNAME }} # EC2 접속 username
-          key: ${{ secrets.EC2_PRIVATE_KEY }} # EC2의 Key 파일의 내부 텍스트
-          script_stop: true # 아래 script 중 실패하는 명령이 하나라도 있으면 실패로 처리
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script_stop: true
           script: |
-            cd /home/ubuntu/spring-deploy-test
-            git pull origin main
-            ./gradlew clean build
+            rm -rf /home/ubuntu/spring-deploy-test/current
+            mkdir /home/ubuntu/spring-deploy-test/current
+            mv /home/ubuntu/spring-deploy-test/tobe/test-built.jar /home/ubuntu/spring-deploy-test/current/test-built.jar
+            cd /home/ubuntu/spring-deploy-test/current
             sudo fuser -k -n tcp 8080 || true
-            nohup java -jar build/libs/test.jar > ./output.log 2>&1 &
+            nohup java -jar test-built.jar > ./output.log 2>&1 & 
+            rm -rf /home/ubuntu/spring-deploy-test/tobe
+
+          
