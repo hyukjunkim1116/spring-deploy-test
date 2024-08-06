@@ -39,7 +39,7 @@ jobs:
         run: docker build -t ecr-test .
 
       - name: Docker 이미지에 Tag 붙이기
-        run: docker tag ecr-test ${{ steps.login-ecr.outputs.registry }}
+        run: docker tag ecr-test ${{ steps.login-ecr.outputs.registry }}/ecr-test:latest
 
       - name: ECR에 Docker 이미지 Push하기
         run: docker push ${{ steps.login-ecr.outputs.registry }}/ecr-test:latest
