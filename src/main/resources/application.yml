@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: deploy-test
+
+server:
+  address: 80
